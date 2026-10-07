@@ -99,19 +99,39 @@ function viewJoin(main) {
       <div class="grid-2"><div class="field"><label>Full name</label><input name="name" required placeholder="Jane Doe"></div><div class="field"><label>Email</label><input name="email" type="email" required placeholder="jane@example.com"></div></div>
       <div class="grid-2"><div class="field"><label>Firm (optional)</label><input name="firm" placeholder="Family office, fund, employer…"></div><div class="field"><label>I expect to qualify as</label><select name="selfType"><option value="">Not sure yet</option>${Object.entries(D.INVESTOR_TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select><span class="hint">Self-declared. Compliance verifies separately.</span></div></div>
       <label class="check"><input type="checkbox" required><span>I have read the Form CRS relationship summary and the private securities risk disclosure.</span></label>
-      <div class="callout">This demo replaces the sample profile with a fresh, unverified member so you can see the request flow. Use "Reset sample data" in the avatar menu to get the verified sample profile back.</div>
+      <div class="callout">This demo switches you to a fresh, unverified member so you can see the request flow. <b>${esc(D.signInProfile().name)}</b>'s sample account is kept exactly as it is: "Sign in" (or the profile menu) brings it back.</div>
     </div><div class="card-foot form-foot" style="background:#fff"><a class="btn ghost" href="#/home">Cancel</a><button class="btn" type="submit">Join as a member</button></div></form>
     <div class="stack"><div class="card card-body stack"><span class="label">What happens next</span><div class="how" style="grid-template-columns:1fr;gap:12px"><div><div class="step">1</div><h3>Join</h3><p>Your membership and a limited brokerage account are created instantly.</p></div><div><div class="step">2</div><h3>Submit requests</h3><p>Bids, asks, custom orders, desk quotes, fund allocations and data room access are routed to your primary representative as requests.</p></div><div><div class="step">3</div><h3>Get verified</h3><p>Tell us whether you are an accredited investor, a QIB or an institution. Once compliance approves, requests go live and you trade directly.</p></div></div></div>
       <div class="card card-body small muted">Current profile: <b>${esc(pr.name)}</b> · ${verBadge()}</div></div></div></div>`;
   main.querySelector('#join-form').addEventListener('submit', e => { e.preventDefault(); const f = e.target; D.joinMember({ name: f.name.value.trim(), email: f.email.value.trim(), firm: f.firm.value.trim(), selfType: f.selfType.value }); toast('Welcome to Rainmaker X'); go('#/dashboard'); });
 }
 // ---------------- sign in / create account ----------------
+// The sign-in form, shared by the sign-in page and every locked member page. It always returns to the sample member's
+// account (Ben Martin), restored exactly as it was left; the email is prefilled so it is clear whose account it is.
+function signInForm() {
+  const who = D.signInProfile();
+  return `<form class="card-body stack" id="signin-form"><p class="muted" style="margin:0">Sign in to place orders, see your account and message your primary representative.</p><div class="field"><label>Email</label><input name="email" type="email" required value="${esc(who.email || '')}" placeholder="you@example.com"></div><div class="field"><label>Password</label><input name="password" type="password" required placeholder="••••••••"></div><div class="between small"><label class="check" style="font-weight:500"><input type="checkbox" name="remember"><span>Keep me signed in</span></label><a class="link" href="#/signin">Forgot password?</a></div><div class="callout tiny">Prototype: any password signs you in as <b>${esc(who.name)}</b>, the sample member, with everything exactly as you left it. Real sign-in with MFA is part of the backend build.</div><button class="btn block" type="submit">Sign in</button><div class="small muted" style="text-align:center">New to Rainmaker X? <a class="link" href="#/signin/create">Create an account</a> · <button type="button" class="link-btn" id="reset-data-page">Reset demo data</button></div></form>`;
+}
+// Wire the shared form: submit signs in and continues to `next`; the Reset link puts the sample data back (works signed out).
+function wireSignIn(main, next) {
+  const f = main.querySelector('#signin-form'); if (f) f.addEventListener('submit', e => { e.preventDefault(); D.signIn(); toast('Welcome back, ' + D.profile().name.split(' ')[0]); const target = next && !next.startsWith('#/signin') ? next : '#/dashboard'; if (location.hash === target) render(); else go(target); });
+  const rd = main.querySelector('#reset-data-page'); if (rd) rd.onclick = () => { if (confirm('Reset all locally saved orders, bids and watchlist?')) D.reset(); };
+}
 function viewSignIn(main, mode, next) {
   const create = mode === 'create';
   main.innerHTML = `<div class="page narrow" style="max-width:520px"><div class="card" style="margin-top:24px"><div class="card-head"><div class="tabs mini"><a class="${create ? '' : 'on'}" href="#/signin" style="text-decoration:none">Sign in</a><a class="${create ? 'on' : ''}" href="#/signin/create" style="text-decoration:none">Create account</a></div></div>
-    ${create ? `<div class="card-body stack"><p class="muted" style="margin:0">Anyone can create an account. You can browse, favorite, set alerts, message a representative and submit requests right away; investor verification unlocks live trading.</p><a class="btn block" href="#/join">Create your account</a></div>`
-    : `<form class="card-body stack" id="signin-form"><p class="muted" style="margin:0">Sign in to place orders, see your account and message your primary representative.</p><div class="field"><label>Email</label><input name="email" type="email" required placeholder="you@example.com"></div><div class="field"><label>Password</label><input name="password" type="password" required placeholder="••••••••"></div><div class="between small"><label class="check" style="font-weight:500"><input type="checkbox" name="remember"><span>Keep me signed in</span></label><a class="link" href="#/signin">Forgot password?</a></div><div class="callout tiny">Prototype: any email and password signs you into the sample profile. Real sign-in with MFA is part of the backend build.</div><button class="btn block" type="submit">Sign in</button><div class="small muted" style="text-align:center">New to Rainmaker X? <a class="link" href="#/signin/create">Create an account</a></div></form>`}</div></div>`;
-  const f = main.querySelector('#signin-form'); if (f) f.addEventListener('submit', e => { e.preventDefault(); D.signIn(); toast('Welcome back, ' + D.profile().name.split(' ')[0]); const target = next && !next.startsWith('#/signin') ? next : '#/dashboard'; if (location.hash === target) render(); else go(target); });
+    ${create ? `<div class="card-body stack"><p class="muted" style="margin:0">Anyone can create an account. You can browse, favorite, set alerts, message a representative and submit requests right away; investor verification unlocks live trading.</p><a class="btn block" href="#/join">Create your account</a></div>` : signInForm()}</div></div>`;
+  wireSignIn(main, next);
+}
+// A member page opened while signed out (Ben, Oct 6 2026): the page keeps its place in the nav and its own title, and
+// says "Sign in to access" with the sign-in form right there, instead of bouncing to a bare sign-in page.
+const LOCK_ICON = { profile: 'client', account: 'account', dashboard: 'orders', orders: 'orders', order: 'order', match: 'settle', messages: 'mail', new: 'order' };
+const LOCK_TEXT = { profile: 'your profile, live orders, favorites and investor verification', account: 'your brokerage account: cash, positions, settlements and statements', dashboard: 'your dashboard', orders: 'your orders, requests, arrangements and matches', order: 'this order and the form to match it', match: 'this match and its settlement', messages: 'your messages with your primary representative and Rainmaker Securities', new: 'the order forms' };
+function viewLocked(main, route, hash) {
+  main.innerHTML = `<div class="page wide">${pageHead({ icon: PH[LOCK_ICON[route]] || PH.account, title: esc(pageLabel(hash)), tag: 'Sign in to access', tagClass: 'pending', sub: `You are signed out. Sign in to see ${LOCK_TEXT[route] || 'this page'}.` })}
+    <div class="card locked-card"><div class="card-head"><h3>Sign in to access</h3></div>${signInForm()}</div></div>`;
+  document.title = 'Rainmaker X · ' + pageLabel(hash);
+  wireSignIn(main, hash);
 }
 
 // My Profile: live bids and asks, structured deals, requests, favorites, verification card.

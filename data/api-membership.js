@@ -10,8 +10,17 @@ Object.assign(Data, {
   canRequest() { return true; },
   setPhoto(url) { state.profile.photo = url || null; audit('profile.photo', url ? 'updated' : 'removed'); save(); },
   isVisitor() { return !!state.visitor; },
+  // True while a "Join" member is layered over the sample account (Ben, Oct 6 2026): the sample member's whole state is kept in state.savedMember.
+  isJoined() { return !!state.savedMember; },
+  // The member Sign in returns to: the saved sample account if a Join replaced it, otherwise the current profile.
+  signInProfile() { return state.savedMember ? state.savedMember.profile : state.profile; },
   signOut() { state.visitor = true; save(); },
-  signIn() { state.visitor = false; save(); },
+  // Sign in = back to the sample member's account (Ben Martin), with everything exactly as it was left. A Join saved
+  // that state in state.savedMember; restore it in place (state is one shared object) so no reset is needed.
+  signIn() {
+    if (state.savedMember) { const saved = state.savedMember; Object.keys(state).forEach(k => delete state[k]); Object.assign(state, saved); }
+    state.visitor = false; save();
+  },
   requests() { state.requests = state.requests || []; return state.requests.slice().sort((a, b) => b.created - a.created); },
   // Unverified member submits an order request; a rep works it until compliance approves.
   submitRequest(req) {
@@ -48,12 +57,16 @@ Object.assign(Data, {
     if (n) { notify(`${n} pending ${n === 1 ? 'request was' : 'requests were'} placed now that your verification is approved.`); save(); }
     return n;
   },
-  // Create a brand-new unverified member (the "Join" flow).
+  // Create a brand-new unverified member (the "Join" flow). The sample member's state is saved first (once; a second
+  // Join keeps the original) so Sign in can bring it back (Ben, Oct 6 2026: "make sure it remembers my account").
   joinMember({ name, email, firm, selfType }) {
+    const snap = state.savedMember ? null : JSON.parse(JSON.stringify(state)); if (snap) delete snap.visitor;
     const initials = name.split(/\s+/).map(x => x[0] || '').join('').slice(0, 2).toUpperCase() || 'RX';
+    state.profile = Object.assign({}, state.profile);   // a fresh object so the saved snapshot is never mutated through a shared reference
     Object.assign(state.profile, { name, initials, email, firm: firm || '', investorType: selfType || null, verification: 'unverified', basis: [], memberSince: Date.now(), verifiedAt: null });
     state.account = null; state.needsAccount = true; state.acctSel = null; state.staffOrders = [];
     state.visitor = false; sessionStorage.removeItem(STAFF_KEY); state.negotiations = {}; state.audit = []; state.arrangements = []; state.watchlist = []; state.userOrders = []; state.userBids = []; state.requests = []; state.lots = []; state.userTx = []; state.settlements = []; state.iois = []; state.alerts = []; state.deskTrades = []; state.dataRoomAccess = {}; state.allocations = []; state.spvLots = []; state.spvInv = {}; state.spvSubs = []; state.messages = []; state.notifications = [];
+    if (snap) state.savedMember = snap;
     notify(`Welcome to Rainmaker X, ${name.split(' ')[0]}. You can browse every company, favorite them, set alerts, message ${this.rep(state.profile.rep).name} and submit requests right away. Complete investor verification to trade live on the book.`);
     save();
   },

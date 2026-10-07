@@ -13,7 +13,9 @@ function render() {
   NAV.record(location.hash || '#/home');   // in-app Back / Forward history
   D.checkAlerts(); D.checkGuards();
   renderHeader(route === 'company' || route === 'order' || route === 'chart' ? 'browse' : route === 'match' ? '' : route === 'new' ? '' : route === 'index' ? 'funds' : route === 'fund' ? ((D.fund(a) || {}).type === 'spv' ? 'spvs' : 'funds') : route === 'orders' || route === 'messages' ? '' : route === 'admin' && a ? 'admin:' + a : route === 'client' ? 'admin:clients' : route);
-  if (D.isVisitor() && ['new', 'orders', 'order', 'match', 'account', 'profile', 'messages', 'dashboard', 'admin', 'client', 'desk', 'staff'].includes(route)) { viewSignIn(main, 'signin', location.hash); document.title = 'Rainmaker X · Sign in'; return; }
+  // Signed out: member pages stay in the nav and render as themselves with "Sign in to access" (Ben, Oct 6 2026); staff routes go to the plain sign-in form.
+  if (D.isVisitor() && ['new', 'orders', 'order', 'match', 'account', 'profile', 'messages', 'dashboard'].includes(route)) { viewLocked(main, route, location.hash); return; }
+  if (D.isVisitor() && ['admin', 'client', 'desk', 'staff'].includes(route)) { viewSignIn(main, 'signin', location.hash); document.title = 'Rainmaker X · Sign in'; return; }
   // Staff areas are never rendered for non-staff: the address answers "not found" and the attempt is logged.
   if (['admin', 'client', 'desk'].includes(route) && !D.isStaff()) { D.accessDenied('#/' + route); viewNotFound(main); document.title = 'Rainmaker X'; return; }
   if (route === 'signin') viewSignIn(main, a === 'create' ? 'create' : 'signin');

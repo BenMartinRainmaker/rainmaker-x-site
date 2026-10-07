@@ -1420,3 +1420,10 @@ tr.row-wait td { background: #fffdf3; }
 .mkf-fold svg { width: 12px; height: 12px; transition: transform .15s; }
 .mkf-fold.open svg { transform: rotate(180deg); }
 @media (max-width: 860px) { .mkf-sum { flex-basis: 100%; } .mkf.folded .mkf-search { width: 100%; } }
+
+/* ---------- v7.19 Signed-out visitors: member nav kept, "Sign in to access" pages, Reset demo data in the header (Ben, Oct 6 2026) ---------- */
+.link-btn { background: none; border: none; padding: 0; font: inherit; color: var(--coral); text-decoration: underline; cursor: pointer; }
+.topbar .btn.hdr-reset { border-color: rgba(255,255,255,.22); color: rgba(255,255,255,.85); }
+.locked-card { max-width: 520px; }
+.locked-card .card-head h3 { margin: 0; font-size: 15px; }
+@media (max-width: 960px) { .topbar .btn.hdr-reset { display: none; } }   /* hamburger mode: Reset demo data stays on the sign-in page and every locked page */
