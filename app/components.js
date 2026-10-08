@@ -38,18 +38,19 @@ function orderRow(o, { showCompany = false, match = false } = {}) {
   const c = D.company(o.companyId); const done = isDone(o); const isL = o.side === 'listing';
   // Match column (Market activity): the member takes the other side of a live order in place.
   const matchCell = !match ? '' : `<td class="num">${!done && o.status === 'live' && !o.mine ? `<button type="button" class="btn sm ${isL ? 'bid' : 'ask'} match-btn" data-match-order="${esc(o.id)}" title="${isL ? 'Bid on this ask' : 'Sell into this bid'} at its price">${isL ? ICON.cart : ICON.cash} Match</button>` : ''}</td>`;
+  // Ben, Oct 8 2026: no Activity column; "Yours" sits beside the order id and every row shows the date it was placed.
   return `<tr class="clickable ${done ? 'done' : ''} ${o.mine ? 'mine' : ''}" data-href="#/order/${esc(o.id)}">
-    <td><span class="row" style="gap:6px">${sideBadge(o)}${customBadge(o)}${fillBadge(o)}<span class="oid">${esc(o.id)}</span></span></td>
+    <td><span class="row" style="gap:6px">${sideBadge(o)}${customBadge(o)}${fillBadge(o)}<span class="oid">${esc(o.id)}</span>${yoursBadge(o)}</span></td>
     ${showCompany ? `<td><span class="row" style="gap:8px">${logo(c, 'sm')}<b>${esc(c.name)}</b></span></td>` : ''}
     <td class="num">${num(o.qty)}</td><td class="num px">${money(o.price)}</td><td class="num px">${money(o.price * o.qty, 0)}</td>
     <td class="dim">${esc(o.shareType)} · ${esc(o.transferType)}</td>
     <td class="dim">${done ? `<span class="badge status">${isL ? 'Sold' : 'Filled'}</span>` : o.status === 'cancelled' ? '<span class="badge status">Cancelled</span>' : `${daysLeft(o)}d`}</td>
-    <td class="num">${isL && !done && o.status !== 'cancelled' ? `<span class="count-pill sm">${o.bidsCount || 0} ${o.bidsCount === 1 ? 'bid' : 'bids'}</span>` : o.mine ? yoursBadge(o) : `<span class="dim small">${fmtDateShort(o.created)}</span>`}</td>${matchCell}</tr>`;
+    <td class="dim placed" title="${esc(fmtDate(o.created))}">${fmtDateShort(o.created)}</td>${matchCell}</tr>`;
 }
 // Table of orders, or an empty message.
 function orderBook(list, { showCompany = false, match = false, empty = 'No live orders.' } = {}) {
   if (!list.length) return `<div class="empty" style="padding:36px 20px">${empty}</div>`;
-  return `<table class="table compact ob"><thead><tr><th>Order</th>${showCompany ? '<th>Company</th>' : ''}<th class="num">Shares</th><th class="num">Price / sh</th><th class="num">Total</th><th>Class · transfer</th><th>Expires</th><th class="num">Activity</th>${match ? '<th class="num">Match</th>' : ''}</tr></thead><tbody>${list.map(o => orderRow(o, { showCompany, match })).join('')}</tbody></table>`;
+  return `<table class="table compact ob"><thead><tr><th>Order</th>${showCompany ? '<th>Company</th>' : ''}<th class="num">Shares</th><th class="num">Price / sh</th><th class="num">Total</th><th>Class · transfer</th><th>Expires</th><th>Placed</th>${match ? '<th class="num">Match</th>' : ''}</tr></thead><tbody>${list.map(o => orderRow(o, { showCompany, match })).join('')}</tbody></table>`;
 }
 // RX price, highest bid, lowest ask strip for a company.
 function pricingStrip(c, lg = false) {

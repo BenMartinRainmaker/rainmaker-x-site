@@ -87,6 +87,7 @@ Object.assign(Data, {
       spvUnits: this.spvLots().map(l => Object.assign({ fund: (this.fund(l.fundId) || {}).name }, l)),
       spvSubscriptions: this.spvSubs().map(x => Object.assign({ fund: (this.fund(x.fundId) || {}).name, label: this.spvSubLabel(x) }, x)),
       messages: this.allMessages().map(m => Object.assign({}, m, { attachments: (m.attachments || []).map(a => ({ name: a.name, size: a.size, type: a.type })) })),
+      feedback: this.feedback(),
       audit: this.auditLog(),
     };
     audit('export.bundle', Object.entries(bundle.counts).map(([k, v]) => `${k} ${v}`).join(', ')); save();

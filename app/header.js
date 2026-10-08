@@ -15,6 +15,25 @@ function staffBar(route) {
   const tab = (href, label, key, n, perm) => (!perm || D.can(perm)) ? `<a class="tab ${route === key ? 'active' : ''}" href="${href}">${label}${n ? `<span class="cnt" title="${n} waiting">${n}</span>` : ''}</a>` : '';
   return `<div class="staffbar"><div class="staffbar-inner"><span class="staff-role">${LOCK}${esc(D.ROLES[D.role()])}<span class="ttl">· secure session · locks in ${mins} min</span></span>${tab('#/admin', 'Overview', 'admin')}${tab('#/desk', 'Rep Desk', 'desk', D.pendingRepRequests().length, 'desk')}${tab('#/admin/verifications', 'Verifications', 'admin:verifications', ver, 'verifications')}${tab('#/admin/forms', 'Compliance forms', 'admin:forms', forms, 'forms')}${tab('#/admin/requests', 'Requests', 'admin:requests', req, 'requests')}${tab('#/admin/orders', 'Orders', 'admin:orders', 0, 'orders.view')}${tab('#/admin/matches', 'Matches', 'admin:matches', (D.pendingMatches().length + D.openSpvSubs().filter(x => x.stage === 2).length), 'matches')}${tab('#/admin/companies', 'Companies', 'admin:companies', 0, 'companies')}${tab('#/admin/inbox', 'Messages', 'admin:inbox', inbox, 'inbox')}${tab('#/admin/mailbox', 'Rainmaker mailbox', 'admin:mailbox', D.firmUnread(), 'inbox')}${tab('#/admin/clients', 'Clients', 'admin:clients', 0, 'clients')}${tab('#/admin/audit', 'Activity log', 'admin:audit', 0, 'audit')}<span class="spacer"></span><button class="btn xs" id="staff-lock" type="button" title="End the staff session">Lock</button></div></div>`;
 }
+// "Give us feedback" section at the foot of the profile menu (Ben, Oct 8 2026): five stars, a topic, a short note, Send.
+function feedbackSection() {
+  const sent = D.feedback().length;
+  return `<div class="menu-head">Give us feedback</div><form class="fb-sec" id="fb-form">
+    <div class="fb-stars" role="radiogroup" aria-label="Rating">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="fb-star" data-star="${n}" title="${n} of 5" aria-label="${n} of 5">${ICON.star}</button>`).join('')}<span class="tiny muted fb-rate-lbl">Rate Rainmaker X</span></div>
+    <select name="topic" aria-label="Topic">${Object.entries(D.FEEDBACK_TOPICS).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join('')}</select>
+    <textarea name="text" rows="3" maxlength="${RX_CONFIG.feedback.maxLength}" placeholder="What works, what does not, what you wish it did…"></textarea>
+    <div class="between"><span class="tiny muted">${sent ? `${sent} sent · goes to ${esc(D.SUPPORT.name)}` : `Goes to ${esc(D.SUPPORT.name)}`}</span><button class="btn sm" type="submit">${ICON.mail} Send feedback</button></div></form>`;
+}
+// Wires the feedback form: clicks inside it keep the menu open, stars toggle, Send posts through Data.sendFeedback.
+function wireFeedback(h) {
+  const f = h.querySelector('#fb-form'); if (!f) return; let rating = 0;
+  f.addEventListener('click', e => e.stopPropagation()); f.addEventListener('keydown', e => e.stopPropagation());
+  const paint = () => f.querySelectorAll('.fb-star').forEach(b => b.classList.toggle('on', +b.dataset.star <= rating));
+  f.querySelectorAll('.fb-star').forEach(b => b.onclick = () => { rating = +b.dataset.star === rating ? 0 : +b.dataset.star; paint(); });
+  f.addEventListener('submit', e => { e.preventDefault(); const text = f.text.value.trim(); if (!text) { f.text.focus(); toast('Tell us something first'); return; }
+    const r = D.sendFeedback({ rating, topic: f.topic.value, text, page: pageLabel(location.hash) }); if (r.error) { toast(r.error); return; }
+    f.text.value = ''; rating = 0; paint(); document.querySelectorAll('.menu').forEach(m => m.classList.add('hidden')); toast('Thank you, your feedback is with Rainmaker Securities'); });
+}
 // Top bar: logo, member / visitor nav, ⌘K search, mail and bell, New order, profile square and menu, ticker tape.
 function renderHeader(route) {
   const h = document.getElementById('header');
@@ -38,7 +57,8 @@ function renderHeader(route) {
       <div class="rel"><button class="icon-btn" id="bell" title="Notifications">${ICON.bell}${notes.length ? `<span class="cnt-red">${notes.length > 9 ? '9+' : notes.length}</span>` : ''}</button>
         <div class="menu hidden" id="bell-menu" style="min-width:320px"><div class="menu-head">Notifications</div>${notes.map(n => `<div class="note">${esc(n.text)}<div class="ts">${fmtPlaced(n.ts)}</div></div>`).join('') || '<div class="note muted">No notifications yet</div>'}</div></div>
       <div class="rel"><button class="profile-btn ${D.canTrade() ? 'verified' : 'unverified'} ${route === 'profile' ? 'on' : ''}" id="avatar" title="${D.canTrade() ? 'Verified investor' : 'Not yet verified'}"><span class="pic">${D.profile().photo ? `<img src="${D.profile().photo}" alt="">` : esc(D.profile().initials)}</span><span class="lbl">${esc(D.profile().name)}</span>${ICON.chev}</button>
-        <div class="menu hidden" id="avatar-menu"><div class="menu-head">${esc(D.profile().name)} · ${verBadge()}</div><a href="#/profile"><b>Account</b><div class="tiny muted">Profile, photo, verification and brokerage details</div></a><div class="menu-head">Switch view (demo)</div><div class="role-row">${Object.entries(D.ROLES).map(([k, v]) => `<button class="chip ${D.role() === k ? 'on' : ''}" data-role="${k}">${v}</button>`).join('')}</div>${D.isJoined() ? `<button id="back-demo"><b>Back to ${esc(D.signInProfile().name)}'s account</b><div class="tiny muted">The sample verified member, exactly as you left it</div></button>` : ''}<button id="sign-out"><b>Log out</b></button><button id="reset-data" class="tiny muted">Reset demo data</button></div></div>
+        <div class="menu hidden" id="avatar-menu"><div class="menu-head">${esc(D.profile().name)} · ${verBadge()}</div><a href="#/profile"><b>Account</b><div class="tiny muted">Profile, photo, verification and brokerage details</div></a><div class="menu-head">Switch view (demo)</div><div class="role-row">${Object.entries(D.ROLES).map(([k, v]) => `<button class="chip ${D.role() === k ? 'on' : ''}" data-role="${k}">${v}</button>`).join('')}</div>${D.isJoined() ? `<button id="back-demo"><b>Back to ${esc(D.signInProfile().name)}'s account</b><div class="tiny muted">The sample verified member, exactly as you left it</div></button>` : ''}<button id="sign-out"><b>Log out</b></button><button id="reset-data" class="tiny muted">Reset demo data</button>
+        ${feedbackSection()}</div></div>
     </div></div>`}
     ${staffBar(route)}<div class="tape"><div class="tape-track">${tape}${tape}</div></div>${histBar()}`;
   wireHistBar(h);
@@ -48,6 +68,7 @@ function renderHeader(route) {
   toggle('#new-order', '#new-menu'); toggle('#bell', '#bell-menu'); toggle('#avatar', '#avatar-menu');
   const rd = h.querySelector('#reset-data'); if (rd) rd.onclick = () => { if (confirm('Reset all locally saved orders, bids and watchlist?')) D.reset(); };
   const so = h.querySelector('#sign-out'); if (so) so.onclick = () => { D.signOut(); toast('Logged out'); go('#/home'); render(); };
+  wireFeedback(h);
   const bd = h.querySelector('#back-demo'); if (bd) bd.onclick = () => { D.signIn(); toast('Welcome back, ' + D.profile().name.split(' ')[0]); go('#/dashboard'); render(); };
   if (!window.__rxMenuClose) { window.__rxMenuClose = true; document.addEventListener('click', () => document.querySelectorAll('.menu, .search-menu').forEach(m => m.classList.add('hidden'))); document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.menu, .search-menu').forEach(m => m.classList.add('hidden')); }); }
   const nt = h.querySelector('#nav-toggle'); if (nt) nt.onclick = e => { e.stopPropagation(); h.querySelector('#nav').classList.toggle('open'); };

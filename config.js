@@ -64,6 +64,12 @@ const RX_CONFIG = deepFreeze({
     hours: 'Mon–Fri 8am–7pm ET',
   },
 
+  // "Give us feedback" section in the profile menu (Ben, Oct 8 2026): a 1-5 rating, a topic and free text, sent to support.
+  feedback: {
+    topics: { app: 'The app overall', orders: 'Placing and matching orders', account: 'Account and money', products: 'Funds, SPVs and Alternatives', idea: 'A feature idea', bug: 'Something is broken' },
+    maxLength: 1500,
+  },
+
   // Fill rules a member can put on any bid or ask (Ben, Sep 30 2026): match any amount, the entire quantity only, or chunks of at least N shares.
   fillRules: {
     partial: 'Partial fills accepted',

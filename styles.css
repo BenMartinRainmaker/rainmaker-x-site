@@ -1427,3 +1427,21 @@ tr.row-wait td { background: #fffdf3; }
 .locked-card { max-width: 520px; }
 .locked-card .card-head h3 { margin: 0; font-size: 15px; }
 @media (max-width: 960px) { .topbar .btn.hdr-reset { display: none; } }   /* hamburger mode: Reset demo data stays on the sign-in page and every locked page */
+
+/* ---------- v7.20 Profile menu "Give us feedback" section; order tables: Yours beside the id, Placed column (Ben, Oct 8 2026) ---------- */
+#avatar-menu { min-width: 320px; }
+.fb-sec { padding: 10px 14px 14px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border); }
+.fb-sec select, .fb-sec textarea { width: 100%; font: inherit; font-size: 13px; border: 1px solid var(--border-strong); border-radius: 6px; padding: 7px 9px; background: #fff; color: var(--ink); }
+.fb-sec textarea { resize: vertical; min-height: 64px; }
+.fb-stars { display: flex; align-items: center; gap: 2px; }
+.fb-stars .fb-star { width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: none; background: none; color: #c9ced6; cursor: pointer; border-radius: 6px; }
+.fb-stars .fb-star svg { width: 20px; height: 20px; }
+.fb-stars .fb-star.on svg { fill: currentColor; }
+.fb-stars .fb-star:hover { background: var(--surface-2); }
+.fb-stars .fb-star.on { color: #d4af37; }
+.fb-stars .fb-rate-lbl { margin-left: 6px; }
+.menu .fb-sec .btn { width: auto; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; font-size: 13px; font-weight: 700; border-radius: 999px; background: var(--coral); color: #fff; flex: none; }
+.menu .fb-sec .btn:hover { background: var(--coral-hover); }
+.fb-sec .between { gap: 10px; }
+.fb-sec .between .tiny { flex: 1; min-width: 0; }
+.table.ob td.placed { white-space: nowrap; }

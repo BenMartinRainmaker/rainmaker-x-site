@@ -5,6 +5,22 @@
 'use strict';
 
 Object.assign(Data, {
+  // ----- feedback (Ben, Oct 8 2026): the "Give us feedback" section in the profile menu -----
+  FEEDBACK_TOPICS: RX_CONFIG.feedback.topics,
+  // Every piece of feedback this member has sent, newest first.
+  feedback() { return (state.feedback || []).slice().sort((a, b) => b.ts - a.ts); },
+  // Record feedback (rating 1-5, topic, text, the page it was sent from), post it to the support thread so Rainmaker's
+  // mailbox sees it, and audit it. Visitors cannot send; the text is required and capped.
+  sendFeedback({ rating, topic, text, page }) {
+    if (state.visitor) return { error: 'Sign in to send feedback' };
+    const t = String(text || '').trim().slice(0, RX_CONFIG.feedback.maxLength); if (!t) return { error: 'Tell us something first' };
+    const r = Math.min(5, Math.max(0, Math.round(+rating || 0))); const tp = this.FEEDBACK_TOPICS[topic] ? topic : 'app';
+    const f = { id: 'FB-' + Date.now().toString(36), ts: Date.now(), rating: r, topic: tp, text: t, page: page || '', role: this.role(), name: state.profile.name };
+    state.feedback = state.feedback || []; state.feedback.unshift(f);
+    const m = this.sendMessage({ text: `Feedback${r ? ` · ${r} / 5` : ''} · ${this.FEEDBACK_TOPICS[tp]}${f.page ? ` · from ${f.page}` : ''}\n${t}`, to: 'support' });
+    f.messageId = m.id; audit('feedback.sent', `${f.id} · ${r ? r + '/5 · ' : ''}${this.FEEDBACK_TOPICS[tp]}`); save();
+    return f;
+  },
   // ----- messages (all routed to Rainmaker, never to counterparties) -----
   messages() { return state.messages.slice().sort((a, b) => a.ts - b.ts); },
   threadKey(companyId, orderId) { return orderId || companyId || 'general'; },
